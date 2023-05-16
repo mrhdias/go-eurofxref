@@ -203,7 +203,7 @@ func (efr EuroFxRef) Query(currencyCode string) (*QueryResult, error) {
 		currencyCode)
 }
 
-func NewEuroFxRefDailyService(
+func New(
 	cacheDir string,
 	createCacheDir bool,
 	debugOption ...bool) EuroFxRef {
