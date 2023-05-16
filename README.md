@@ -10,24 +10,24 @@ go get github.com/mrhdias/go-eurofxref-daily
 package main
 
 import (
-	"fmt"
-	"log"
+  "fmt"
+  "log"
 
-	eurofxref "github.com/mrhdias/go-eurofxref-daily"
+  eurofxref "github.com/mrhdias/go-eurofxref-daily"
 )
 
 func main() {
-	cacheDir := "./eurofxref_cache"
-	service := eurofxref.NewEuroFxRefDailyService(
+  cacheDir := "./eurofxref_cache"
+  service := eurofxref.NewEuroFxRefDailyService(
     cacheDir, // Cache directory
-    true,     // Create the cache directory if not exists
+	true,     // Create the cache directory if not exists
   )
 
-	result, err := service.Query("USD")
-	if err != nil {
-		log.Fatalln(err)
-	}
+  result, err := service.Query("USD")
+  if err != nil {
+    log.Fatalln(err)
+  }
 
-	fmt.Println(result.LastUpdate, result.RateValue)
+  fmt.Println(result.LastUpdate, result.RateValue)
 }
 ```
