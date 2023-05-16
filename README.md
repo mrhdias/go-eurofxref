@@ -18,7 +18,7 @@ import (
 
 func main() {
   cacheDir := "./eurofxref_cache"
-  service := eurofxref.NewEuroFxRefDailyService(
+  service := eurofxref.New(
     cacheDir, // Cache directory
 	true,     // Create the cache directory if not exists
   )
