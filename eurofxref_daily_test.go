@@ -15,7 +15,7 @@ import (
 func TestEuroFxRefDaily(t *testing.T) {
 
 	cacheDir := "./eurofxref_cache"
-	service := NewEuroFxRefDailyService(cacheDir, true)
+	service := New(cacheDir, true)
 
 	if _, err := service.Query("USD"); err != nil {
 		t.Fatal(err)
