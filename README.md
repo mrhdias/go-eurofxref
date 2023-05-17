@@ -17,18 +17,24 @@ import (
 )
 
 func main() {
-	cacheDir := "./eurofxref_cache"
-	service := eurofxref.New(
-		cacheDir, // Cache directory
-		true,     // Create the cache directory if not exists
-	)
-
-	result, err := service.Query("USD")
-	if err != nil {
+  
+  cacheDir := "./eurofxref_cache"
+  
+  query := eurofxref.New(
+	  cacheDir, // Cache directory
+    true,     // Create the cache directory if not exists
+  )
+  
+  if err := query.ValidateCurrencyCode("USD"); err != nil {
 		log.Fatalln(err)
 	}
 
-	fmt.Println(result.LastUpdate, result.RateValue)
+  result, err := query.Daily("USD")
+  if err != nil {
+    log.Fatalln(err)
+  }
+
+  fmt.Println(result.LastUpdate, result.RateValue)
 }
 
 ```
