@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-17 19:49:19
+// Last Modification: 2023-05-17 21:00:07
 //
 // References:
 // https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
@@ -69,14 +69,14 @@ func (efr EuroFxRef) ValidateCurrencyCode(currencyCode string) error {
 
 func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 
-	if currencyCode != "" && strings.EqualFold(strings.ToUpper(currencyCode), "EUR") {
-		return &QueryResult{
-			LastUpdate: time.Now(),
-			RateValue:  1.00,
-		}, nil
-	}
-
 	if err := efr.ValidateCurrencyCode(currencyCode); err != nil {
+		if strings.EqualFold(strings.ToUpper(currencyCode), "EUR") {
+			return &QueryResult{
+				LastUpdate: time.Now(),
+				RateValue:  1.00,
+			}, nil
+		}
+
 		return nil, err
 	}
 
