@@ -1,3 +1,3 @@
-module github.com/mrhdias/go-eurofxref-daily
+module github.com/mrhdias/go-eurofxref
 
 go 1.20
