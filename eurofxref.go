@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-17 14:46:06
+// Last Modification: 2023-05-17 18:01:03
 //
 // References:
 // https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -74,49 +73,54 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 	// req.Header.Add("User-Agent", fmt.Sprintf("%s/%s", userAgent, version))
 
 	if err != nil {
-		log.Fatalf("[Fatal] %v\r\n", err)
+		// log.Fatalf("[Fatal] %v\r\n", err)
+		return nil, fmt.Errorf("client could not create request: %v", err)
 	}
 
 	xmlFilename := path.Base(req.URL.Path)
 	xmlFilePath := filepath.Join(efr.CacheDir, xmlFilename)
 	// fmt.Println(xmlFilePath)
 
-	getFromCache := func() bool {
+	getFromCache, err := func() (bool, error) {
 		if efr.CacheDir == "" {
-			return false
+			return false, nil
 		}
+
 		// create the cache directory if it does not exist
 		if _, err := os.Stat(efr.CacheDir); errors.Is(err, os.ErrNotExist) {
 			if efr.CreateCacheDir {
 				if err := os.Mkdir(efr.CacheDir, os.ModePerm); err != nil {
-					log.Fatalf("[Fatal] %v\r\n", err)
+					return false, fmt.Errorf("error creating cache directory: %v", err)
 				}
 			}
-			return false
+			return false, nil
 		}
 
 		if fileStat, err := os.Stat(xmlFilePath); err == nil {
 			// fmt.Println(fileStat.ModTime())
 			if (fileStat.ModTime().Local().Day() != time.Now().Local().Day()) || (fileStat.Size() == 0) {
 				if err := os.Remove(xmlFilePath); err != nil {
-					log.Fatalf("[Fatal] %v\r\n", err)
+					return false, fmt.Errorf("error removing cached xml file: %v", err)
 				}
-				return false
+				return false, nil
 			}
-			return true
+			return true, nil
 		}
-		return false
+		return false, nil
 	}()
+	if err != nil {
+		return nil, err
+	}
 
 	// fmt.Println("GetFromCache:", xmlFilePath, getFromCache)
 
-	contentBytes := func() []byte {
+	contentBytes, err := func() ([]byte, error) {
 		if getFromCache {
 			data, err := os.ReadFile(xmlFilePath)
 			if err != nil {
-				log.Fatalf("[Fatal] %v\r\n", err)
+				return nil, fmt.Errorf("error reading the cached xml file: %v", err)
 			}
-			return data
+			return data, nil
 		}
 
 		client := &http.Client{
@@ -125,29 +129,32 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Fatalf("[Fatal] %v\r\n", err)
+			return nil, fmt.Errorf("error making http request: %v", err)
 		}
 
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			log.Fatalf("[Fatal] The request get \"%s\" returned an error with status code %d\r\n",
+			return nil, fmt.Errorf("the request get \"%s\" returned an error with status code %d",
 				efr.Url, resp.StatusCode)
 		}
 
 		respContentBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalf("[Fatal] %v\r\n", err)
+			return nil, fmt.Errorf("client could not read response body: %v", err)
 		}
 
 		if efr.CacheDir != "" {
 			if err := os.WriteFile(xmlFilePath, respContentBytes, 0644); err != nil {
-				log.Fatalf("[Fatal] %v\r\n", err)
+				return nil, fmt.Errorf("error writing the cached xml file: %v", err)
 			}
 		}
 
-		return respContentBytes
+		return respContentBytes, nil
 	}()
+	if err != nil {
+		return nil, err
+	}
 
 	if efr.Debug {
 		fmt.Println(string(contentBytes))
@@ -182,7 +189,7 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 	var envelope Envelope
 
 	if err := xml.Unmarshal(contentBytes, &envelope); err != nil {
-		log.Fatalf("[Fatal] %v\n", err)
+		return nil, fmt.Errorf("error when unmarshal parses the XML-encoded data: %v", err)
 	}
 
 	// fmt.Println(envelope.Cube.Cube.Time)
@@ -191,12 +198,12 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 		if strings.EqualFold(rate.Currency, strings.ToUpper(currencyCode)) {
 			rateValue, err := strconv.ParseFloat(rate.Rate, 64)
 			if err != nil {
-				log.Fatalf("[Fatal] %v\n", err)
+				return nil, fmt.Errorf("error when convert rate string from envelope to float: %v", err)
 			}
 
 			cubeTime, err := time.Parse("2006-01-02", envelope.Cube.Cube.Time)
 			if err != nil {
-				log.Fatalf("[Fatal] %v\n", err)
+				return nil, fmt.Errorf("error when convert time string from envelope to float: %v", err)
 			}
 
 			return &QueryResult{
