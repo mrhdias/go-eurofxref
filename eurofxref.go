@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-16 22:11:03
+// Last Modification: 2023-05-17 14:46:06
 //
 // References:
 // https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
@@ -45,22 +45,29 @@ type QueryResult struct {
 	RateValue  float64
 }
 
-func (efr EuroFxRef) Query(currencyCode string) (*QueryResult, error) {
+func (efr EuroFxRef) ValidateCurrencyCode(currencyCode string) error {
 
 	if currencyCode == "" {
-		return nil, errors.New("no currency code specified")
+		return errors.New("no currency code specified")
 	}
 
 	if len(currencyCode) != 3 {
-		return nil, fmt.Errorf("the \"%s\" currency code is wrong",
+		return fmt.Errorf("the \"%s\" currency code has a wrong number of characters",
 			currencyCode)
 	}
 
-	cc := strings.ToUpper(currencyCode)
-
-	if _, ok := efr.Currencies[cc]; !ok {
-		return nil, fmt.Errorf("the currency code \"%s\" is not allowed",
+	if _, ok := efr.Currencies[strings.ToUpper(currencyCode)]; !ok {
+		return fmt.Errorf("the currency code \"%s\" is not part of the reference list",
 			currencyCode)
+	}
+
+	return nil
+}
+
+func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
+
+	if err := efr.ValidateCurrencyCode(currencyCode); err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest("GET", efr.Url, nil)
@@ -181,7 +188,7 @@ func (efr EuroFxRef) Query(currencyCode string) (*QueryResult, error) {
 	// fmt.Println(envelope.Cube.Cube.Time)
 
 	for _, rate := range envelope.Cube.Cube.Cube {
-		if strings.EqualFold(rate.Currency, cc) {
+		if strings.EqualFold(rate.Currency, strings.ToUpper(currencyCode)) {
 			rateValue, err := strconv.ParseFloat(rate.Rate, 64)
 			if err != nil {
 				log.Fatalf("[Fatal] %v\n", err)
