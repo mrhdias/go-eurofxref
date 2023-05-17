@@ -1,9 +1,9 @@
-# go-eurofxref-daily
+# go-eurofxref
 Euro foreign exchange reference rates
 
 ## Installation
 ```
-go get github.com/mrhdias/go-eurofxref-daily
+go get github.com/mrhdias/go-eurofxref
 ```
 ## Example
 ```go
@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"log"
 
-	eurofxref "github.com/mrhdias/go-eurofxref-daily"
+	eurofxref "github.com/mrhdias/go-eurofxref"
 )
 
 func main() {
