@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-16 19:35:29
+// Last Modification: 2023-05-17 14:45:43
 //
 
 package eurofxref
@@ -12,12 +12,16 @@ import (
 	"testing"
 )
 
-func TestEuroFxRefDaily(t *testing.T) {
+func TestEuroFxRef(t *testing.T) {
 
 	cacheDir := "./eurofxref_cache"
-	service := New(cacheDir, true)
+	query := New(cacheDir, true)
 
-	if _, err := service.Query("USD"); err != nil {
+	if err := query.ValidateCurrencyCode("USD"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := query.Daily("USD"); err != nil {
 		t.Fatal(err)
 	}
 
