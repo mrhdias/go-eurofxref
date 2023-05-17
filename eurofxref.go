@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-17 18:01:03
+// Last Modification: 2023-05-17 18:11:38
 //
 // References:
 // https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
@@ -55,7 +55,11 @@ func (efr EuroFxRef) ValidateCurrencyCode(currencyCode string) error {
 			currencyCode)
 	}
 
-	if _, ok := efr.Currencies[strings.ToUpper(currencyCode)]; !ok {
+	cc := strings.ToUpper(currencyCode)
+	if _, ok := efr.Currencies[cc]; !ok {
+		if strings.EqualFold(cc, "EUR") {
+			return errors.New("all currencies quoted against the euro (base currency)")
+		}
 		return fmt.Errorf("the currency code \"%s\" is not part of the reference list",
 			currencyCode)
 	}
