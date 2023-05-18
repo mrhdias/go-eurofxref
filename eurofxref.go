@@ -2,7 +2,7 @@
 // Copyright 2023 The GoEurofxref Authors. All rights reserved.
 // Use of this source code is governed by a MIT License
 // license that can be found in the LICENSE file.
-// Last Modification: 2023-05-17 21:02:45
+// Last Modification: 2023-05-18 18:55:56
 //
 // References:
 // https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html
@@ -92,34 +92,36 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 	xmlFilePath := filepath.Join(efr.CacheDir, xmlFilename)
 	// fmt.Println(xmlFilePath)
 
-	getFromCache, err := func() (bool, error) {
+	expired := false
+	getFromCache := false
+
+	if err := func() error {
 		if efr.CacheDir == "" {
-			return false, nil
+			return nil
 		}
 
 		// create the cache directory if it does not exist
 		if _, err := os.Stat(efr.CacheDir); errors.Is(err, os.ErrNotExist) {
 			if efr.CreateCacheDir {
 				if err := os.Mkdir(efr.CacheDir, os.ModePerm); err != nil {
-					return false, fmt.Errorf("error creating cache directory: %v", err)
+					return fmt.Errorf("error creating cache directory: %v", err)
 				}
 			}
-			return false, nil
+			return nil
 		}
 
 		if fileStat, err := os.Stat(xmlFilePath); err == nil {
 			// fmt.Println(fileStat.ModTime())
 			if (fileStat.ModTime().Local().Day() != time.Now().Local().Day()) || (fileStat.Size() == 0) {
-				if err := os.Remove(xmlFilePath); err != nil {
-					return false, fmt.Errorf("error removing cached xml file: %v", err)
-				}
-				return false, nil
+				expired = true
+				return nil
 			}
-			return true, nil
+			getFromCache = true
+			return nil
 		}
-		return false, nil
-	}()
-	if err != nil {
+
+		return nil
+	}(); err != nil {
 		return nil, err
 	}
 
@@ -156,6 +158,12 @@ func (efr EuroFxRef) Daily(currencyCode string) (*QueryResult, error) {
 		}
 
 		if efr.CacheDir != "" {
+			if expired {
+				if err := os.Remove(xmlFilePath); err != nil {
+					return nil, fmt.Errorf("error removing cached xml file: %v", err)
+				}
+			}
+
 			if err := os.WriteFile(xmlFilePath, respContentBytes, 0644); err != nil {
 				return nil, fmt.Errorf("error writing the cached xml file: %v", err)
 			}
